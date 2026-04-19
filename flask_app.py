@@ -165,11 +165,13 @@ DIMENSION_RULES = {
     },
     "个人成长": {
         "primary": ["习惯", "品格", "品质", "心态", "态度", "情绪", "自律", "坚持", "诚实",
-                    "守时", "准时", "细心", "耐心", "勇气", "勤奋", "自信", "反思", "改正",
+                    "守时", "准时", "细心", "耐心", "勇气", "勤奋", "自信", "自卑", "反思", "改正",
                     "成长", "进步", "改变", "坚强", "乐观", "积极", "自我管理", "规划",
                     "计划", "目标", "紧张", "焦虑", "心态不好", "容易紧张", "笑嘻嘻",
                     "可爱", "正气", "一身正气", "勤能补拙", "胖乎乎",
-                    "自己要", "自驱", "内驱", "自觉", "自我", "主动"],
+                    "自己要", "自驱", "内驱", "自觉", "自我", "主动",
+                    "胆小", "胆怯", "腼腆", "害羞", "内向", "孤僻", "不合群",
+                    "不自信", "缺乏自信", "敏感", "心思重"],
         "secondary": [],
         "negative": ["班长", "为班级", "做事最多", "志愿者"]
     },
@@ -359,6 +361,31 @@ def integrate_personal(observations):
     has_family_support = any("家庭" in o or "支持系统" in o for o in observations)
     has_appearance = any("外表" in o or "戴眼镜" in o or "憨厚" in o or "亲和" in o for o in observations)
     has_puberty = any("青春期" in o or "变声期" in o for o in observations)
+    has_inferiority = any("自卑" in o or "自我认同" in o or "胆怯" in o or "不自信" in o for o in observations)
+    has_introvert = any("内向" in o or "腼腆" in o or "害羞" in o for o in observations)
+    has_isolated = any("孤僻" in o or "社交意愿" in o for o in observations)
+
+    # 自卑+正面：矛盾画像（如"成绩不错但有些自卑"）
+    if has_inferiority and has_positive:
+        return "外在表现良好，但内心存在自卑倾向，自我认同感需要加强"
+    if has_inferiority and has_tension:
+        return "容易紧张且存在自卑倾向，心理安全感不足，需要多鼓励和肯定"
+    if has_inferiority and has_righteous:
+        return "品性正直，但自我认同感偏低，需要在肯定中建立自信"
+    if has_inferiority:
+        return "存在自卑倾向，自我认同感偏低，需要更多鼓励和肯定来建立自信"
+
+    # 内向/腼腆
+    if has_introvert and has_positive:
+        return "性格内向腼腆，但也有阳光积极的一面"
+    if has_introvert and has_tension:
+        return "性格内向腼腆，在压力情境下更容易紧张，需要安全环境逐步打开自己"
+    if has_introvert:
+        return "性格内向腼腆，需要在安全包容的环境中逐渐展现自我"
+
+    # 孤僻
+    if has_isolated:
+        return "社交意愿偏低、较为孤僻，需要关注其社交需求和融入感"
 
     if has_self_discipline and has_family_support:
         base = "生活习惯良好、自律性强，家庭环境温暖有支持"
@@ -500,6 +527,13 @@ def summarize_text_rules(text, dimension):
                 (r"(胖乎乎|胖胖|壮壮)", lambda m: "外形憨厚亲和"),
                 (r"独立|自理", lambda m: "生活自理能力较强"),
                 (r"敏感|细腻|心思重", lambda m: "内心细腻敏感"),
+                # 新增：自卑/不自信/胆怯类
+                (r"自卑|不自信|缺乏自信|缺少自信", lambda m: "存在自卑倾向，自我认同感偏低"),
+                (r"有些.{0,2}(自卑|胆小|内向|害羞)", lambda m: "有一定程度的自卑/胆怯倾向"),
+                (r"比较.{0,2}(自卑|胆小|内向|害羞|腼腆)", lambda m: "性格偏内向胆怯"),
+                (r"胆小|胆怯|怯场", lambda m: "性格胆怯，缺乏勇气表达自我"),
+                (r"内向|腼腆|害羞|怕生", lambda m: "性格内向腼腆"),
+                (r"孤僻|不合群|不愿社交|不跟人玩", lambda m: "社交意愿偏低，较为孤僻"),
                 (r"瘦瘦|瘦|黑|黑黑的", lambda m: "外表清瘦"),
                 (r"戴.{0,3}眼镜", lambda m: "戴眼镜"),
                 (r"变声期|声音.{0,4}(特点|特别|独特)", lambda m: "正处于青春期发育阶段"),
