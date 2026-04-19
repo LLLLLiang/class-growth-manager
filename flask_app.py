@@ -30,8 +30,8 @@ TDOC_SHEET_ID = "t00i2h"
 TDOC_URL = "https://docs.qq.com/smartsheet/DS1pZZVRna2pucnBU"
 
 # Cloudflare Worker 代理地址（PA免费版白名单含workers.dev）
-# 部署 tdoc-proxy-worker.js 后填入分配的地址
-TDOC_PROXY = os.environ.get("TDOC_PROXY", "")  # 例如 "https://tdoc-proxy.xxx.workers.dev"
+# 通过此代理中转访问腾讯文档API，绕过PA白名单限制
+TDOC_PROXY = "https://yizheng.2642046836.workers.dev"
 
 # SSL上下文（用于腾讯文档API调用）
 _ssl_ctx = ssl.create_default_context()
