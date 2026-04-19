@@ -932,7 +932,11 @@ def batch_records():
         synced = sum(1 for r in tdoc_results if not r.get("error"))
         tdoc_msg = f"，已同步 {synced} 条到腾讯文档"
     except Exception as e:
-        tdoc_msg = f"，腾讯文档同步失败: {str(e)[:50]}"
+        err_msg = str(e)
+        if "timed out" in err_msg.lower() or "connection" in err_msg.lower():
+            tdoc_msg = "，腾讯文档同步需在本地版操作"
+        else:
+            tdoc_msg = f"，腾讯文档同步失败: {err_msg[:50]}"
 
     count = len(records_to_save)
     return jsonify({
@@ -1193,6 +1197,9 @@ def health_check():
 
 
 # ===== 腾讯文档同步 API =====
+# 注意：PA免费版白名单不包含docs.qq.com，同步可能失败
+# 代码会尝试调用，成功则同步，失败则提示用户在本地操作
+
 @app.route('/api/tdoc/sync', methods=['POST'])
 def tdoc_sync():
     """手动同步所有本地数据到腾讯文档"""
@@ -1202,6 +1209,17 @@ def tdoc_sync():
         return jsonify({"success": False, "error": "没有记录可同步"})
     try:
         results = tdoc_add_records(records)
+        # 检查是否有网络限制错误
+        first_error = None
+        for r in results:
+            if r.get("error"):
+                first_error = r.get("error")
+                break
+        if first_error and ("whitelist" in str(first_error).lower() or "blocked" in str(first_error).lower() or "timed out" in str(first_error).lower()):
+            return jsonify({
+                "success": False,
+                "error": "云端服务器暂无法访问腾讯文档，请在本地版（127.0.0.1:8765）中同步"
+            })
         synced = sum(1 for r in results if not r.get("error"))
         failed = len(results) - synced
         msg = f"✅ 已同步 {synced} 条记录到腾讯文档"
@@ -1216,7 +1234,14 @@ def tdoc_sync():
             "url": TDOC_URL
         })
     except Exception as e:
-        return jsonify({"success": False, "error": f"同步失败: {str(e)}"})
+        err_msg = str(e)
+        # 网络受限的典型错误
+        if "timed out" in err_msg.lower() or "connection" in err_msg.lower():
+            return jsonify({
+                "success": False,
+                "error": "云端服务器暂无法访问腾讯文档，请在本地版（127.0.0.1:8765）中同步"
+            })
+        return jsonify({"success": False, "error": f"同步失败: {err_msg}"})
 
 
 @app.route('/api/tdoc/load', methods=['POST'])
@@ -1225,6 +1250,12 @@ def tdoc_load():
     try:
         cloud_data = tdoc_list_records()
         if cloud_data.get("error"):
+            err_msg = str(cloud_data["error"])
+            if "timed out" in err_msg.lower() or "connection" in err_msg.lower():
+                return jsonify({
+                    "success": False,
+                    "error": "云端服务器暂无法访问腾讯文档，请在本地版（127.0.0.1:8765）中加载"
+                })
             return jsonify({"success": False, "error": f"加载失败: {cloud_data['error']}"})
 
         cloud_records = cloud_data.get("records", [])
@@ -1263,7 +1294,13 @@ def tdoc_load():
             "message": f"✅ 从腾讯文档加载 {added} 条新记录，共 {len(data['records'])} 条"
         })
     except Exception as e:
-        return jsonify({"success": False, "error": f"加载失败: {str(e)}"})
+        err_msg = str(e)
+        if "timed out" in err_msg.lower() or "connection" in err_msg.lower():
+            return jsonify({
+                "success": False,
+                "error": "云端服务器暂无法访问腾讯文档，请在本地版（127.0.0.1:8765）中加载"
+            })
+        return jsonify({"success": False, "error": f"加载失败: {err_msg}"})
 
 
 def _extract_text(field_val):
@@ -1304,12 +1341,12 @@ def _extract_date(field_val):
 
 @app.route('/api/cloud/save', methods=['POST'])
 def cloud_save():
-    return jsonify({"success": False, "error": "PythonAnywhere免费版暂不支持云端保存"})
+    return jsonify({"success": False, "error": "云端版暂不支持云端备份，数据已保存在服务器"})
 
 
 @app.route('/api/cloud/load', methods=['POST'])
 def cloud_load():
-    return jsonify({"success": False, "error": "PythonAnywhere免费版暂不支持云端加载"})
+    return jsonify({"success": False, "error": "云端版暂不支持云端加载，数据已保存在服务器"})
 
 
 @app.route('/api/export/excel', methods=['GET'])
