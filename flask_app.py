@@ -37,7 +37,8 @@ DIMENSION_RULES = {
                     "守时", "准时", "细心", "耐心", "勇气", "勤奋", "自信", "反思", "改正",
                     "成长", "进步", "改变", "坚强", "乐观", "积极", "自我管理", "规划",
                     "计划", "目标", "紧张", "焦虑", "心态不好", "容易紧张", "笑嘻嘻",
-                    "可爱", "正气", "一身正气", "勤能补拙", "胖乎乎"],
+                    "可爱", "正气", "一身正气", "勤能补拙", "胖乎乎",
+                    "自己要", "自驱", "内驱", "自觉", "自我", "主动"],
         "secondary": [],
         "negative": ["班长", "为班级", "做事最多", "志愿者"]
     },
@@ -46,7 +47,10 @@ DIMENSION_RULES = {
                     "值日", "扫地", "擦", "劳动", "班长", "班委", "干部", "服务",
                     "规则", "纪律", "秩序", "礼貌", "尊重", "友善", "关心", "同学",
                     "朋友", "集体", "组织", "协调", "解决冲突", "义务", "负责",
-                    "为班级", "为年级", "做事", "付出", "志愿者", "家访", "哭"],
+                    "为班级", "为年级", "做事", "付出", "志愿者", "家访", "哭",
+                    "调皮", "捣蛋", "对着干", "顶撞", "听话", "关系", "师生",
+                    "缓和", "改善", "叛逆", "对抗", "抵触", "顺从", "配合",
+                    "对抗", "不听话", "管教", "违反", "捣乱", "闹腾"],
         "secondary": [],
         "negative": ["最喜欢", "一身正气", "可爱"]
     },
@@ -91,30 +95,56 @@ def classify_dimension(text):
 
 
 def split_into_segments(text):
-    """将长段话按语义切分为多个片段"""
-    sentences = re.split(r'[。！？；\n]', text)
+    """将长段话按语义切分为多个片段（支持逗号级别的细粒度切分）"""
+    # 第一层：按句号、感叹号等大标点切分
+    big_segments = re.split(r'[。！？；\n]', text)
+    
+    # 对每个大段进一步按逗号切分为小句
+    all_clauses = []
+    for seg in big_segments:
+        seg = seg.strip()
+        if not seg:
+            continue
+        # 按逗号切分
+        clauses = re.split(r'[，,]', seg)
+        for c in clauses:
+            c = c.strip()
+            if c and len(c) >= 2:
+                all_clauses.append(c)
+    
+    if not all_clauses:
+        return [text]
+    
+    # 将小句按维度合并：相邻且同维度的合并为一段
     segments = []
     current = ""
-    for s in sentences:
-        s = s.strip()
-        if not s:
-            continue
-        test_text = current + s if current else s
+    current_dim = None
+    
+    for clause in all_clauses:
+        clause_dim = classify_dimension(clause)
+        
         if current:
-            current_dim = classify_dimension(current)
-            new_dim = classify_dimension(s)
-            # 如果两段属于不同维度且当前段已足够长，该拆分
-            if current_dim != new_dim and len(current) > 6:
-                segments.append(current.strip())
-                current = s
+            # 太短的从句（感叹、总结等）合并到前一段，不单独拆分
+            if len(clause) <= 8:
+                current = current + "，" + clause
+            # 如果维度相同，合并
+            elif clause_dim == current_dim:
+                current = current + "，" + clause
             else:
-                current = test_text
+                # 维度不同，保存当前段，开始新段
+                segments.append(current.strip())
+                current = clause
+                current_dim = clause_dim
         else:
-            current = s
-
+            current = clause
+            current_dim = clause_dim
+    
     if current.strip():
         segments.append(current.strip())
-
+    
+    # 过滤太短的段
+    segments = [s for s in segments if len(s) >= 4]
+    
     return segments if segments else [text]
 
 
@@ -233,8 +263,25 @@ def integrate_social(observations):
     has_helping = any("助人" in o or "劳动" in o or "公益" in o or "志愿" in o or "帮老师" in o or "积极" in o for o in observations)
     has_competitiveness = any("好胜" in o or "竞争" in o or "争辩" in o or "落选" in o or "赌气" in o for o in observations)
     has_unreliable = any("不靠谱" in o or "不够细致" in o or "不够靠谱" in o or "过于活泼" in o or "执行力" in o for o in observations)
-    has_active = any("活泼" in o or "积极" in o or "开朗" in o for o in observations)
+    has_active = any("活泼" in o or "积极" in o or "开朗" in o or "调皮" in o for o in observations)
     has_core = any("核心" in o or "领头" in o or "骨干" in o for o in observations)
+    has_relationship_improve = any("改善" in o or "缓和" in o or "减少" in o or "配合" in o or "守规矩" in o or "向好" in o for o in observations)
+    has_rebellion_past = any("对抗" in o or "曾有" in o for o in observations)
+
+    # 师生关系改善画像
+    if has_relationship_improve and has_rebellion_past:
+        if has_active:
+            return "性格调皮但师生关系明显改善，对抗行为减少，变得更加配合——转变积极向好"
+        return "曾有对抗行为但正在改善，师生关系明显缓和，态度转变积极"
+
+    if has_relationship_improve and has_active:
+        return "性格活泼调皮，但人际关系在改善，整体发展态势向好"
+
+    if has_relationship_improve:
+        return "人际关系明显改善，变得更加配合守规矩"
+
+    if has_rebellion_past:
+        return "曾有对抗行为，需要持续关注师生关系的改善"
 
     if has_active and has_unreliable:
         if has_core:
@@ -294,15 +341,19 @@ def summarize_text_rules(text, dimension):
                 (r"(数学|英语|语文|科学).{0,8}(好|优秀|突出|进步)", lambda m: f"{m.group(1)}学科优势明显"),
                 (r"(语文|数学|英语|科学).{0,10}全面发展", lambda m: "各学科全面发展"),
                 (r"课堂.{0,6}(积极|发言|提问|参与)", lambda m: "课堂参与积极主动"),
-                (r"作业.{0,6}(全对|认真|完成|不交|拖拉)", lambda m: "作业习惯需关注"),
+                (r"作业.{0,6}(全对|认真|完成.{0,2}好|完成得很|优秀)", lambda m: "作业完成质量高"),
+                (r"作业.{0,6}(不交|拖拉|敷衍|没做|不完成|不认真)", lambda m: "作业习惯需关注"),
                 (r"(努力|认真).{0,4}(学习|学|钻研)", lambda m: "学习投入度高"),
                 (r"(分心|走神|开小差|不专注)", lambda m: "注意力容易分散"),
                 (r"班级.{0,6}(第二|第三|前[二三]|前三)", lambda m: "学业成绩稳居班级前列"),
                 (r"永远.{0,4}(第二|第三|前[二三])", lambda m: "学业成绩稳定在班级前列"),
                 (r"成绩.{0,5}(稳定|没有波动)", lambda m: "学业成绩稳定"),
+                (r"成绩.{0,5}(没掉|不掉|没降|不降|保持)", lambda m: "学业成绩稳定"),
                 (r"非常非常.{0,3}(好|优秀)", lambda m: "学业表现优异"),
                 (r"十佳|最高规格", lambda m: "获得过校级重要荣誉"),
                 (r"乐器|打鼓|才艺", lambda m: "具有才艺特长"),
+                # 自我驱动力（学术相关）
+                (r"(自己|说明).{0,4}(要|想|会).{0,4}(读书|学习|努力)", lambda m: "具有学习自驱力"),
             ],
             "integrator": lambda observations: integrate_academic(observations)
         },
@@ -328,6 +379,10 @@ def summarize_text_rules(text, dimension):
                 (r"家长|父母|家里面.{0,8}(好|支持|关心|和睦)", lambda m: "家庭支持系统良好"),
                 (r"很好.{0,2}很好", lambda m: "整体发展良好"),
                 (r"不错.{0,2}不错|真的不错", lambda m: "各方面表现良好"),
+                # 自我驱动力
+                (r"自己.{0,2}(要|想|会|能).{0,4}(读书|学习|做|努力)", lambda m: "具有自我驱动力"),
+                (r"自驱|内驱|自觉|主动性", lambda m: "学习自觉性强"),
+                (r"说明.{0,6}(要|想|会|能).{0,4}(读书|学习|努力)", lambda m: "内心有自我成长的动力"),
             ],
             "integrator": lambda observations: integrate_personal(observations)
         },
@@ -349,10 +404,21 @@ def summarize_text_rules(text, dimension):
                 (r"大队委员|班委|干部|代表", lambda m: "关注班级管理角色"),
                 (r"争辩|反驳|顶嘴|不服", lambda m: "遇到不同意见时容易争辩"),
                 (r"帮老师.{0,6}(做事|做事情|帮忙)", lambda m: "乐于帮助老师处理事务"),
+                # 师生关系相关
+                (r"和老师.{0,6}(关系.{0,4}(缓和|改善|好|不错)|相处.{0,4}(好|融洽|改善))", lambda m: "师生关系明显改善"),
+                (r"老师.{0,6}(关系.{0,4}(缓和|改善|好)|相处.{0,4}(好|融洽))", lambda m: "师生关系明显改善"),
+                (r"关系.{0,4}(缓和|改善|好|不错|融洽)", lambda m: "人际关系有所改善"),
+                (r"(不对着干|不顶撞|不抵触|不再.{0,4}(对着干|顶撞|对抗))", lambda m: "对抗行为明显减少"),
+                (r"(原来|之前|以前).{0,6}(对着干|顶撞|抵触|对抗|不听)", lambda m: "曾有对抗行为但正在改善"),
+                (r"听话|守规矩|配合|顺从", lambda m: "变得更加配合守规矩"),
+                (r"调皮|捣蛋|捣乱|闹腾", lambda m: "性格调皮活泼"),
+                (r"再好不过|最好|最好不过|越来越好", lambda m: "整体发展态势向好"),
+                # 活泼但不靠谱
                 (r"活泼.{0,8}(不靠谱|不认真|不仔细|马虎)", lambda m: "性格活泼但做事不够细致"),
                 (r"(不|没那么).{0,4}靠谱", lambda m: "做事不够靠谱稳重"),
                 (r"很.{0,2}(活泼|开朗|积极).{0,8}(但|不过|但是|就是)", lambda m: "性格活泼但执行力有落差"),
                 (r"太.{0,2}(活泼|开朗|积极)", lambda m: "性格过于活泼"),
+                # 领头/核心
                 (r"领头|核心|骨干|主力|带头人", lambda m: "在班级中具有核心影响力"),
                 (r"三个人.{0,6}(领头|核心|主力|代表)", lambda m: "是班级核心学生之一"),
                 (r"为年级.{0,6}(做事|付出|做|服务)", lambda m: "积极参与年级事务"),
@@ -455,6 +521,12 @@ def generic_summarize(text):
         (r"瘦瘦|瘦", lambda m: "体型偏瘦"),
         (r"黑黑|黑", lambda m: "肤色偏黑"),
         (r"变声期", lambda m: "正处于变声期"),
+        # 师生关系
+        (r"(和|跟).{0,4}老师.{0,6}(缓和|改善|好|不错|融洽)", lambda m: "师生关系改善"),
+        (r"不对着干|不顶撞|不再.{0,4}(对着干|顶撞|对抗)", lambda m: "对抗行为减少"),
+        (r"听话|配合|守规矩", lambda m: "变得更加配合"),
+        (r"调皮", lambda m: "性格调皮"),
+        (r"再好不过", lambda m: "发展态势很好"),
     ]
 
     for pattern, handler in summary_patterns:
