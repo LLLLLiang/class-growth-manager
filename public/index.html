@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>班级成长管家 · 六1班</title>
+<style>
+  :root {
+    --primary: #4f7fff;
+    --primary-dark: #3a6aed;
+    --accent: #ff7c5d;
+    --success: #22c77a;
+    --warning: #f5a623;
+    --bg: #f0f4ff;
+    --card: #ffffff;
+    --text: #2d3748;
+    --text-sub: #718096;
+    --border: #e2e8f0;
+    --shadow: 0 4px 20px rgba(79,127,255,0.10);
+    --dim-academic: #4f7fff;
+    --dim-personal: #22c77a;
+    --dim-social: #f5a623;
+    --dim-talent: #b06aff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  .header {
+    background: linear-gradient(135deg, #4f7fff 0%, #7c5fff 100%);
+    color: white; padding: 0 24px; height: 64px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 12px rgba(79,127,255,0.3);
+  }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .header-logo { font-size: 24px; }
+  .header-title { font-size: 18px; font-weight: 700; }
+  .header-sub { font-size: 12px; opacity: 0.8; margin-top: 2px; }
+  .header-stats { display: flex; gap: 20px; font-size: 13px; }
+  .stat-item { text-align: center; }
+  .stat-num { font-size: 20px; font-weight: 700; line-height: 1; }
+  .stat-label { opacity: 0.8; font-size: 11px; margin-top: 2px; }
+  .container { display: flex; height: calc(100vh - 64px); }
+  .sidebar {
+    width: 220px; background: white; border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0;
+  }
+  .sidebar-section { padding: 16px 12px 8px; }
+  .sidebar-title {
+    font-size: 11px; font-weight: 600; color: var(--text-sub);
+    letter-spacing: 1px; padding: 0 4px; margin-bottom: 8px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: 10px; cursor: pointer;
+    transition: all 0.2s; font-size: 14px; color: var(--text-sub); margin-bottom: 2px;
+  }
+  .nav-item:hover { background: var(--bg); color: var(--text); }
+  .nav-item.active { background: #eef3ff; color: var(--primary); font-weight: 600; }
+  .nav-item .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+  .student-search {
+    width: 100%; padding: 8px 12px; border: 1px solid var(--border);
+    border-radius: 8px; font-size: 13px; outline: none; margin-bottom: 8px; color: var(--text);
+  }
+  .student-search:focus { border-color: var(--primary); }
+  .student-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 10px; border-radius: 8px; cursor: pointer;
+    font-size: 13px; transition: all 0.15s; margin-bottom: 1px;
+  }
+  .student-item:hover { background: var(--bg); }
+  .student-item.active { background: #eef3ff; color: var(--primary); font-weight: 600; }
+  .student-badge {
+    background: #eef3ff; color: var(--primary); font-size: 11px;
+    padding: 1px 6px; border-radius: 10px; font-weight: 600;
+  }
+  .student-item.active .student-badge { background: var(--primary); color: white; }
+  .main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+  .view { display: none; flex-direction: column; height: 100%; }
+  .view.active { display: flex; }
+
+  /* Record View */
+  .record-panel { background: white; border-bottom: 1px solid var(--border); padding: 20px 24px; }
+  .panel-title { font-size: 15px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .input-area {
+    width: 100%; padding: 14px 16px; border: 2px solid var(--border);
+    border-radius: 12px; font-size: 14px; resize: vertical; min-height: 100px;
+    outline: none; font-family: inherit; color: var(--text); transition: border-color 0.2s; line-height: 1.6;
+  }
+  .input-area:focus { border-color: var(--primary); }
+  .input-hint { font-size: 12px; color: var(--text-sub); margin-top: 8px; }
+  .btn-row { display: flex; gap: 10px; margin-top: 14px; align-items: center; flex-wrap: wrap; }
+  .btn {
+    padding: 10px 20px; border: none; border-radius: 10px; font-size: 14px;
+    font-weight: 600; cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); }
+  .btn-secondary { background: #f0f4ff; color: var(--primary); }
+  .btn-secondary:hover { background: #e0e8ff; }
+  .btn-danger { background: #fff0ee; color: #e05c3a; }
+  .btn-danger:hover { background: #ffe0d9; }
+  .btn-success { background: #e6faf2; color: #1da462; }
+  .btn-success:hover { background: #d0f5e6; }
+  .btn-sm { padding: 6px 14px; font-size: 12px; border-radius: 8px; }
+
+  /* Preview Cards (multiple) */
+  .preview-section { margin-top: 16px; display: none; }
+  .preview-section.show { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: translateY(0); } }
+  .preview-header {
+    font-size: 14px; font-weight: 700; color: var(--primary);
+    margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+  }
+  .preview-cards { display: flex; flex-direction: column; gap: 10px; }
+  .preview-card {
+    border: 2px solid var(--border); border-radius: 12px; padding: 14px;
+    background: #fafbff; transition: all 0.2s; position: relative;
+  }
+  .preview-card:hover { border-color: var(--primary); }
+  .preview-card.dim-学术发展 { border-left: 4px solid var(--dim-academic); }
+  .preview-card.dim-个人成长 { border-left: 4px solid var(--success); }
+  .preview-card.dim-社会性发展 { border-left: 4px solid var(--warning); }
+  .preview-card.dim-特色与潜能 { border-left: 4px solid #b06aff; }
+  .pc-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .pc-dim-tag {
+    padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+  }
+  .dim-学术发展 .pc-dim-tag { background: #eef3ff; color: var(--dim-academic); }
+  .dim-个人成长 .pc-dim-tag { background: #e6faf2; color: #1da462; }
+  .dim-社会性发展 .pc-dim-tag { background: #fff7e6; color: #d97706; }
+  .dim-特色与潜能 .pc-dim-tag { background: #f3eeff; color: #7c3aed; }
+  .pc-student { font-weight: 700; font-size: 14px; }
+  .pc-date { font-size: 12px; color: var(--text-sub); margin-left: auto; }
+  .pc-label { font-size: 11px; color: var(--text-sub); font-weight: 600; margin-bottom: 4px; display: block; }
+  .pc-summary {
+    font-size: 13px; font-weight: 600; color: var(--primary);
+    padding: 8px 12px; background: white; border-radius: 8px; margin-bottom: 8px;
+    border: 1px solid #e8efff; line-height: 1.6;
+  }
+  .pc-summary::before { content: "💡 归纳："; }
+  .pc-original {
+    font-size: 12px; color: var(--text-sub); padding: 8px 12px;
+    background: #f8f9fc; border-radius: 8px; line-height: 1.5;
+    max-height: 60px; overflow: hidden; position: relative;
+  }
+  .pc-original::after {
+    content: ""; position: absolute; bottom: 0; left: 0; right: 0;
+    height: 20px; background: linear-gradient(transparent, #f8f9fc);
+  }
+  .pc-original-label { font-size: 10px; color: #999; margin-bottom: 2px; }
+  .pc-remove {
+    position: absolute; top: 8px; right: 8px; width: 24px; height: 24px;
+    border-radius: 50%; border: none; background: #fff0ee; color: #e05c3a;
+    font-size: 12px; cursor: pointer; display: flex; align-items: center;
+    justify-content: center; opacity: 0; transition: opacity 0.2s;
+  }
+  .preview-card:hover .pc-remove { opacity: 1; }
+
+  /* Records List */
+  .records-header {
+    padding: 16px 24px 12px; display: flex; align-items: center;
+    justify-content: space-between; border-bottom: 1px solid var(--border); background: white;
+  }
+  .records-filters { display: flex; gap: 8px; }
+  .filter-btn {
+    padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border);
+    background: white; font-size: 12px; cursor: pointer; transition: all 0.15s; color: var(--text-sub);
+  }
+  .filter-btn.active, .filter-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
+  .records-count { font-size: 13px; color: var(--text-sub); }
+  .records-list { flex: 1; overflow-y: auto; padding: 16px 24px; display: flex; flex-direction: column; gap: 10px; }
+  .record-card {
+    background: white; border-radius: 12px; padding: 14px 16px;
+    border: 1px solid var(--border); transition: all 0.2s; animation: slideIn 0.3s ease;
+  }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+  .record-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+  .record-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+  .record-student { font-weight: 700; font-size: 14px; }
+  .dim-tag { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .dim-学术发展 { background: #eef3ff; color: var(--dim-academic); }
+  .dim-个人成长 { background: #e6faf2; color: #1da462; }
+  .dim-社会性发展 { background: #fff7e6; color: #d97706; }
+  .dim-特色与潜能 { background: #f3eeff; color: #7c3aed; }
+  .record-date { font-size: 12px; color: var(--text-sub); margin-left: auto; }
+  .record-summary {
+    font-size: 14px; font-weight: 600; color: var(--primary);
+    padding: 8px 12px; background: #f8faff; border-radius: 8px;
+    margin-bottom: 6px; line-height: 1.5;
+  }
+  .record-desc { font-size: 12px; color: var(--text-sub); line-height: 1.5; }
+  .record-actions { margin-top: 8px; display: flex; gap: 8px; opacity: 0; transition: opacity 0.2s; }
+  .record-card:hover .record-actions { opacity: 1; }
+  .action-btn {
+    padding: 4px 10px; border: none; border-radius: 6px;
+    font-size: 11px; cursor: pointer; transition: all 0.15s; font-family: inherit;
+  }
+  .action-del { background: #fff0ee; color: #e05c3a; }
+  .action-del:hover { background: #ffddd6; }
+  .action-edit { background: #f0f4ff; color: var(--primary); }
+  .action-edit:hover { background: #e0e8ff; }
+  .edit-area {
+    width: 100%; padding: 10px 12px; border: 2px solid var(--primary);
+    border-radius: 8px; font-size: 14px; font-family: inherit;
+    resize: vertical; min-height: 60px; outline: none; line-height: 1.6; color: var(--text);
+  }
+  .edit-row { display: flex; gap: 8px; margin-top: 8px; }
+  .dim-edit-select {
+    padding: 4px 10px; border: 1px solid var(--border); border-radius: 6px;
+    font-size: 12px; outline: none; color: var(--text); font-family: inherit;
+  }
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text-sub); }
+  .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-title { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+
+  /* Dashboard */
+  .dashboard { padding: 24px; flex: 1; overflow-y: auto; }
+  .dash-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .dash-card {
+    background: white; border-radius: 14px; padding: 20px;
+    border: 1px solid var(--border); box-shadow: var(--shadow); transition: transform 0.2s;
+  }
+  .dash-card:hover { transform: translateY(-2px); }
+  .dash-card-icon { font-size: 28px; margin-bottom: 10px; }
+  .dash-card-num { font-size: 28px; font-weight: 800; color: var(--primary); }
+  .dash-card-label { font-size: 13px; color: var(--text-sub); margin-top: 4px; }
+  .dash-section-title { font-size: 15px; font-weight: 700; margin-bottom: 14px; }
+  .recent-records { background: white; border-radius: 14px; border: 1px solid var(--border); overflow: hidden; }
+  .recent-header { padding: 14px 18px; border-bottom: 1px solid var(--border); font-weight: 700; font-size: 14px; }
+  .recent-item {
+    display: flex; align-items: center; gap: 12px; padding: 12px 18px;
+    border-bottom: 1px solid #f5f7fa; font-size: 13px; transition: background 0.15s;
+  }
+  .recent-item:last-child { border-bottom: none; }
+  .recent-item:hover { background: #f8faff; }
+  .recent-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot-学术发展 { background: var(--dim-academic); }
+  .dot-个人成长 { background: var(--success); }
+  .dot-社会性发展 { background: var(--warning); }
+  .dot-特色与潜能 { background: #b06aff; }
+  .recent-student { font-weight: 600; flex-shrink: 0; min-width: 50px; }
+  .recent-desc { color: var(--text-sub); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .recent-date { color: var(--text-sub); font-size: 11px; flex-shrink: 0; }
+  .dim-bar-section { background: white; border-radius: 14px; border: 1px solid var(--border); padding: 20px; }
+  .dim-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .dim-bar-label { width: 80px; font-size: 13px; flex-shrink: 0; }
+  .dim-bar-track { flex: 1; height: 10px; background: #f0f4ff; border-radius: 10px; overflow: hidden; }
+  .dim-bar-fill { height: 100%; border-radius: 10px; transition: width 0.5s ease; }
+  .fill-学术发展 { background: var(--dim-academic); }
+  .fill-个人成长 { background: var(--success); }
+  .fill-社会性发展 { background: var(--warning); }
+  .fill-特色与潜能 { background: #b06aff; }
+  .dim-bar-count { font-size: 12px; color: var(--text-sub); width: 30px; text-align: right; }
+
+  /* Report */
+  .report-view { padding: 24px; flex: 1; overflow-y: auto; }
+  .report-selector { background: white; border-radius: 14px; padding: 20px; border: 1px solid var(--border); margin-bottom: 20px; }
+  .report-selector-title { font-size: 15px; font-weight: 700; margin-bottom: 14px; }
+  .student-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; }
+  .student-btn {
+    padding: 8px 4px; border-radius: 10px; border: 1px solid var(--border);
+    background: white; font-size: 12px; cursor: pointer; text-align: center;
+    transition: all 0.15s; color: var(--text); font-family: inherit;
+  }
+  .student-btn:hover { border-color: var(--primary); color: var(--primary); background: #f0f4ff; }
+  .student-btn.has-records { border-color: #c7d9ff; background: #f0f4ff; }
+  .student-btn.selected { background: var(--primary); color: white; border-color: var(--primary); }
+  .report-card {
+    background: white; border-radius: 16px; padding: 24px;
+    border: 1px solid var(--border); box-shadow: var(--shadow); display: none;
+  }
+  .report-card.show { display: block; animation: fadeIn 0.4s ease; }
+  .report-header { text-align: center; padding-bottom: 20px; border-bottom: 2px dashed var(--border); margin-bottom: 20px; }
+  .report-name { font-size: 24px; font-weight: 800; color: var(--primary); }
+  .report-subtitle { color: var(--text-sub); font-size: 13px; margin-top: 6px; }
+  .report-total {
+    display: inline-block; background: #eef3ff; color: var(--primary);
+    padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; margin-top: 10px;
+  }
+  .report-section { margin-bottom: 20px; }
+  .report-section-header {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+    padding: 12px 16px; border-radius: 12px; font-weight: 700; font-size: 15px;
+  }
+  .rs-学术发展 { background: #eef3ff; color: var(--dim-academic); }
+  .rs-个人成长 { background: #e6faf2; color: #1da462; }
+  .rs-社会性发展 { background: #fff7e6; color: #d97706; }
+  .rs-特色与潜能 { background: #f3eeff; color: #7c3aed; }
+  .report-records { padding: 0 4px; }
+  .report-record-item {
+    padding: 10px 14px; border-left: 3px solid var(--border);
+    margin-bottom: 8px; font-size: 13px; line-height: 1.6;
+  }
+  .report-record-item .rec-date { color: var(--text-sub); font-size: 11px; margin-bottom: 4px; }
+  .report-record-item .rec-summary { font-weight: 600; color: var(--primary); margin-bottom: 4px; }
+  .report-record-item .rec-desc { color: var(--text-sub); font-size: 12px; }
+  .report-summary {
+    background: linear-gradient(135deg, #f0f4ff, #e8f0fe);
+    border-radius: 12px; padding: 16px 20px; margin-top: 20px; border: 1px solid #c7d9ff;
+  }
+  .report-summary h4 { color: var(--primary); margin-bottom: 8px; font-size: 14px; }
+  .report-summary p { font-size: 13px; line-height: 1.8; }
+  .no-record-dim { text-align: center; padding: 10px; color: var(--text-sub); font-size: 12px; }
+
+  /* Query */
+  .query-view { padding: 24px; flex: 1; overflow-y: auto; }
+  .query-box { background: white; border-radius: 14px; padding: 20px; border: 1px solid var(--border); margin-bottom: 20px; }
+  .query-title { font-size: 15px; font-weight: 700; margin-bottom: 14px; }
+  .query-examples { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .example-chip {
+    padding: 6px 14px; background: #f0f4ff; color: var(--primary);
+    border-radius: 20px; font-size: 12px; cursor: pointer;
+    transition: all 0.15s; border: 1px solid #c7d9ff;
+  }
+  .example-chip:hover { background: var(--primary); color: white; }
+  .query-result { background: white; border-radius: 14px; border: 1px solid var(--border); overflow: hidden; }
+
+  /* Toast */
+  .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+  .toast {
+    padding: 12px 18px; border-radius: 12px; font-size: 13px; color: white;
+    max-width: 360px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    animation: toastIn 0.3s ease; cursor: pointer;
+  }
+  @keyframes toastIn { from { opacity:0; transform: translateY(20px); } to { opacity:1; transform: translateY(0); } }
+  .toast-success { background: #22c77a; }
+  .toast-error { background: #ef4444; }
+  .toast-info { background: var(--primary); }
+
+  .spinner {
+    display: inline-block; width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.4); border-top-color: white;
+    border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="header-logo">🌱</div>
+    <div>
+      <div class="header-title">班级成长管家</div>
+      <div class="header-sub">同济二附中 · 六1班 · 梁老师</div>
+    </div>
+  </div>
+  <div class="header-stats">
+    <div class="stat-item"><div class="stat-num" id="statTotal">0</div><div class="stat-label">总记录</div></div>
+    <div class="stat-item"><div class="stat-num" id="statCovered">0</div><div class="stat-label">有记录学生</div></div>
+    <div class="stat-item"><div class="stat-num">40</div><div class="stat-label">全班人数</div></div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-title">功能导航</div>
+      <div class="nav-item active" onclick="switchView('dashboard', this)"><span class="nav-icon">📊</span> 总览看板</div>
+      <div class="nav-item" onclick="switchView('record', this)"><span class="nav-icon">✏️</span> 记录事件</div>
+      <div class="nav-item" onclick="switchView('browse', this)"><span class="nav-icon">📋</span> 浏览记录</div>
+      <div class="nav-item" onclick="switchView('report', this)"><span class="nav-icon">📄</span> 成长报告</div>
+      <div class="nav-item" onclick="switchView('query', this)"><span class="nav-icon">💬</span> 智能查询</div>
+      <div class="nav-item" onclick="switchView('sync', this)"><span class="nav-icon">☁️</span> 云同步/导出</div>
+    </div>
+    <div class="sidebar-section"><div class="sidebar-title">学生名单</div></div>
+    <div class="student-list" style="padding:0 12px 16px;">
+      <input class="student-search" type="text" placeholder="搜索学生..." oninput="filterStudents(this.value)">
+      <div id="studentListEl"></div>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- Dashboard -->
+    <div class="view active" id="view-dashboard">
+      <div class="dashboard">
+        <div class="dash-grid" id="dashCards"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div>
+            <div class="dash-section-title">📝 最近记录</div>
+            <div class="recent-records"><div class="recent-header">最新动态</div><div id="recentList"></div></div>
+          </div>
+          <div>
+            <div class="dash-section-title">📊 维度分布</div>
+            <div class="dim-bar-section" id="dimBars"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Record -->
+    <div class="view" id="view-record">
+      <div class="record-panel">
+        <div class="panel-title">✏️ 记录学生表现</div>
+        <textarea class="input-area" id="recordInput"
+          placeholder="用自然语言描述，AI会自动拆分、归纳、归类。例如：&#10;• 金石是我们班的班长，成绩一般但勤能补拙，态度非常端正，会为班级做所有事情...&#10;• 张梦洁今天科学课提出了很有创意的实验方案，带领小组完成了任务"></textarea>
+        <div class="input-hint">💡 一段话可包含多个维度信息，AI会自动拆分成多条记录并归纳提炼</div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="parseRecord()" id="parseBtn">🔍 智能解析</button>
+          <button class="btn btn-secondary" onclick="quickRecord()" id="quickBtn">⚡ 解析并直接保存</button>
+          <button class="btn" style="background:#f5f5f5;color:#666" onclick="clearInput()">清空</button>
+        </div>
+        <!-- Multi-record Preview -->
+        <div class="preview-section" id="previewSection">
+          <div class="preview-header">📋 AI解析结果 — 请确认后保存</div>
+          <div class="preview-cards" id="previewCards"></div>
+          <div class="btn-row" style="margin-top:14px;">
+            <button class="btn btn-success" onclick="confirmSaveAll()" id="confirmBtn">✅ 全部保存</button>
+            <button class="btn btn-danger" onclick="cancelPreview()">✕ 取消</button>
+          </div>
+        </div>
+      </div>
+      <div style="padding:0 24px;margin-top:4px;">
+        <div style="font-size:13px;color:var(--text-sub);padding:12px 0 8px;font-weight:600;">今日已记录</div>
+      </div>
+      <div class="records-list" id="recordViewList" style="padding-top:0;"></div>
+    </div>
+
+    <!-- Browse -->
+    <div class="view" id="view-browse">
+      <div class="records-header">
+        <div class="records-filters" id="dimFilters">
+          <button class="filter-btn active" onclick="filterByDim('all', this)">全部</button>
+          <button class="filter-btn" onclick="filterByDim('学术发展', this)">📚 学术发展</button>
+          <button class="filter-btn" onclick="filterByDim('个人成长', this)">🌱 个人成长</button>
+          <button class="filter-btn" onclick="filterByDim('社会性发展', this)">🤝 社会性发展</button>
+          <button class="filter-btn" onclick="filterByDim('特色与潜能', this)">✨ 特色与潜能</button>
+        </div>
+        <div class="records-count" id="recordsCount">共 0 条</div>
+      </div>
+      <div class="records-list" id="browseList"></div>
+    </div>
+
+    <!-- Report -->
+    <div class="view" id="view-report">
+      <div class="report-view">
+        <div class="report-selector">
+          <div class="report-selector-title">📄 选择学生生成成长简报</div>
+          <div class="student-grid" id="reportStudentGrid"></div>
+        </div>
+        <div class="report-card" id="reportCard"></div>
+      </div>
+    </div>
+
+    <!-- Query -->
+    <div class="view" id="view-query">
+      <div class="query-view">
+        <div class="query-box">
+          <div class="query-title">💬 智能查询</div>
+          <textarea class="input-area" id="queryInput" style="min-height:70px;"
+            placeholder="直接提问：分析一下张梦洁 / 总结黄君浩在合作方面的特点"></textarea>
+          <div class="query-examples">
+            <span class="example-chip" onclick="fillQuery('分析一下金石')">分析金石</span>
+            <span class="example-chip" onclick="fillQuery('总结黄君浩在合作方面的特点')">黄君浩合作能力</span>
+            <span class="example-chip" onclick="fillQuery('周卓然这学期表现怎么样')">周卓然综合表现</span>
+          </div>
+          <div class="btn-row"><button class="btn btn-primary" onclick="doQuery()">🔍 查询分析</button></div>
+        </div>
+        <div class="query-result" id="queryResult" style="display:none;"></div>
+      </div>
+    </div>
+
+    <!-- Sync/Export -->
+    <div class="view" id="view-sync">
+      <div class="query-view">
+        <div class="query-box">
+          <div class="query-title">☁️ 云同步 & 数据导出</div>
+          <p style="font-size:13px;color:var(--text-sub);margin-bottom:16px;line-height:1.8;">
+            数据保存在云端后，你可以在任何电脑上通过"云端ID"恢复数据。<br>
+            也可以导出为文件，手动导入到腾讯文档或Excel中。
+          </p>
+          
+          <!-- Tencent Docs -->
+          <div style="background:#f0f4ff;border-radius:12px;padding:16px;margin-bottom:16px;border:1px solid #c7d7ff;">
+            <div style="font-size:14px;font-weight:700;margin-bottom:12px;">📄 腾讯文档智能表格</div>
+            <p style="font-size:12px;color:var(--text-sub);margin-bottom:12px;line-height:1.8;">
+              数据自动同步到腾讯文档，任何设备都能查看和编辑。<br>
+              每次保存记录时自动同步，也可以手动全量同步。
+            </p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+              <button class="btn btn-primary btn-sm" onclick="window.open('https://docs.qq.com/smartsheet/DS1pZZVRna2pucnBU','_blank')">🔗 打开腾讯文档</button>
+              <button class="btn btn-success btn-sm" onclick="tdocSync()">☁️ 全量同步到腾讯文档</button>
+              <button class="btn btn-secondary btn-sm" onclick="tdocLoad()">📥 从腾讯文档加载</button>
+            </div>
+            <div id="tdocStatus" style="font-size:12px;color:var(--text-sub);"></div>
+          </div>
+          
+          <!-- Export -->
+          <div style="background:#f8fff8;border-radius:12px;padding:16px;margin-bottom:16px;border:1px solid #d0f5e6;">
+            <div style="font-size:14px;font-weight:700;margin-bottom:12px;">📥 导出数据</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <button class="btn btn-success btn-sm" onclick="exportExcel()">📊 导出CSV（Excel可打开）</button>
+              <button class="btn btn-secondary btn-sm" onclick="exportJSON()">📄 导出JSON</button>
+            </div>
+            <div style="font-size:11px;color:var(--text-sub);margin-top:8px;">
+              💡 CSV文件可直接拖入腾讯文档或Excel打开
+            </div>
+          </div>
+          
+          <!-- Import -->
+          <div style="background:#fff8f0;border-radius:12px;padding:16px;border:1px solid #ffe0c7;">
+            <div style="font-size:14px;font-weight:700;margin-bottom:12px;">📤 导入数据</div>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <input type="file" id="importFile" accept=".json" 
+                style="font-size:13px;" onchange="importJSON(this)">
+              <span style="font-size:11px;color:var(--text-sub);">仅支持JSON格式</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// 自动检测API地址：云端部署用相对路径，本地用127.0.0.1
+const API = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost'
+  ? `http://${window.location.hostname}:8765`
+  : '';  // 空字符串=相对路径（与前端同域名）
+let allStudents = [], allRecords = [];
+let currentFilter = 'all', currentStudent = null;
+let pendingRecords = [];
+
+async function init() {
+  await loadStudents();
+  await loadAllRecords();
+  await loadStats();
+  renderSidebar();
+  renderReportGrid();
+  renderDashboard();
+  renderTodayRecords();
+}
+
+async function loadStudents() {
+  try {
+    const r = await fetch(`${API}/api/students`);
+    const d = await r.json();
+    allStudents = d.students || [];
+  } catch(e) { showToast('无法连接后端服务', 'error'); }
+}
+
+async function loadAllRecords() {
+  try {
+    const r = await fetch(`${API}/api/records`);
+    const d = await r.json();
+    allRecords = d.records || [];
+  } catch(e) {}
+}
+
+async function loadStats() {
+  try {
+    const r = await fetch(`${API}/api/stats`);
+    const d = await r.json();
+    document.getElementById('statTotal').textContent = d.total_records || 0;
+    document.getElementById('statCovered').textContent = d.students_covered || 0;
+    return d;
+  } catch(e) {}
+}
+
+async function loadRecords(student, dim) {
+  try {
+    let url = `${API}/api/records`;
+    const p = [];
+    if (student) p.push(`student=${encodeURIComponent(student)}`);
+    if (dim && dim !== 'all') p.push(`dimension=${encodeURIComponent(dim)}`);
+    if (p.length) url += '?' + p.join('&');
+    const r = await fetch(url);
+    const d = await r.json();
+    return d.records || [];
+  } catch(e) { return []; }
+}
+
+function renderSidebar() {
+  const counts = {};
+  allRecords.forEach(r => { counts[r.student] = (counts[r.student]||0)+1; });
+  document.getElementById('studentListEl').innerHTML = allStudents.map(s =>
+    `<div class="student-item ${currentStudent===s.name?'active':''}" onclick="selectStudent('${s.name}')" data-name="${s.name}">
+      <span>${s.id}. ${s.name}</span>
+      ${counts[s.name]?`<span class="student-badge">${counts[s.name]}</span>`:''}
+    </div>`
+  ).join('');
+}
+
+function filterStudents(q) {
+  document.querySelectorAll('#studentListEl .student-item').forEach(item => {
+    item.style.display = item.dataset.name.includes(q) ? 'flex' : 'none';
+  });
+}
+
+function selectStudent(name) {
+  currentStudent = name;
+  renderSidebar();
+  if (document.getElementById('view-browse').classList.contains('active')) renderBrowse();
+  if (document.getElementById('view-report').classList.contains('active')) generateReport(name);
+}
+
+function switchView(view, el) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`view-${view}`).classList.add('active');
+  if (el) el.classList.add('active');
+  if (view === 'browse') renderBrowse();
+  if (view === 'dashboard') { loadStats(); renderDashboard(); }
+  if (view === 'report') renderReportGrid();
+  if (view === 'record') renderTodayRecords();
+}
+
+async function renderDashboard() {
+  const stats = await loadStats();
+  if (!stats) return;
+  const dims = ["学术发展","个人成长","社会性发展","特色与潜能"];
+  const de = {"学术发展":"📚","个人成长":"🌱","社会性发展":"🤝","特色与潜能":"✨"};
+  document.getElementById('dashCards').innerHTML = `
+    <div class="dash-card"><div class="dash-card-icon">📝</div><div class="dash-card-num">${stats.total_records}</div><div class="dash-card-label">总成长记录</div></div>
+    <div class="dash-card"><div class="dash-card-icon">👧</div><div class="dash-card-num">${stats.students_covered}</div><div class="dash-card-label">有记录学生</div></div>
+    <div class="dash-card"><div class="dash-card-icon">📊</div><div class="dash-card-num">${40-stats.students_covered}</div><div class="dash-card-label">待关注学生</div></div>
+    <div class="dash-card"><div class="dash-card-icon">📅</div><div class="dash-card-num">${getTodayCount()}</div><div class="dash-card-label">今日新增</div></div>
+  `;
+  const recent = stats.recent_5 || [];
+  document.getElementById('recentList').innerHTML = recent.length ? recent.map(r => `
+    <div class="recent-item">
+      <div class="recent-dot dot-${r.dimension}"></div>
+      <div class="recent-student">${r.student}</div>
+      <div class="recent-desc">${r.summary || r.description}</div>
+      <div class="recent-date">${r.date}</div>
+    </div>`).join('') : '<div style="padding:20px;text-align:center;color:#718096;font-size:13px;">暂无记录</div>';
+  const maxC = Math.max(...dims.map(d => stats.by_dimension[d]||0), 1);
+  document.getElementById('dimBars').innerHTML = `
+    <div style="font-size:14px;font-weight:700;margin-bottom:16px;">各维度记录数</div>
+    ${dims.map(d => `<div class="dim-bar">
+      <div class="dim-bar-label">${de[d]} ${d}</div>
+      <div class="dim-bar-track"><div class="dim-bar-fill fill-${d}" style="width:${Math.max(4,(stats.by_dimension[d]||0)/maxC*100)}%"></div></div>
+      <div class="dim-bar-count">${stats.by_dimension[d]||0}</div>
+    </div>`).join('')}`;
+}
+
+function getTodayCount() {
+  const today = new Date().toISOString().slice(0,10);
+  return allRecords.filter(r => r.date === today).length;
+}
+
+// ===== Record =====
+async function parseRecord() {
+  const text = document.getElementById('recordInput').value.trim();
+  if (!text) { showToast('请先输入描述内容', 'error'); return; }
+  const btn = document.getElementById('parseBtn');
+  btn.innerHTML = '<span class="spinner"></span> 解析中...'; btn.disabled = true;
+  try {
+    const r = await fetch(`${API}/api/parse`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({text})
+    });
+    const d = await r.json();
+    if (d.error) { showToast(d.error, 'error'); return; }
+    pendingRecords = d.records;
+    renderPreviewCards();
+    document.getElementById('previewSection').classList.add('show');
+    showToast(d.message, 'info');
+  } catch(e) { showToast('解析失败', 'error'); }
+  finally { btn.innerHTML = '🔍 智能解析'; btn.disabled = false; }
+}
+
+function renderPreviewCards() {
+  document.getElementById('previewCards').innerHTML = pendingRecords.map((r, i) => `
+    <div class="preview-card dim-${r.dimension}" id="pcard-${i}">
+      <button class="pc-remove" onclick="removePending(${i})" title="移除">✕</button>
+      <div class="pc-header">
+        <span class="pc-student">${r.student}</span>
+        <span class="pc-dim-tag">${r.dimension}</span>
+        <span class="pc-date">${r.date}</span>
+      </div>
+      <span class="pc-label">归纳提炼 <small style="color:var(--primary);font-weight:400;">（可直接点击修改）</small></span>
+      <div class="pc-summary" contenteditable="true" id="psummary-${i}" style="outline:none;cursor:text;">${escHtml(r.summary)}</div>
+      <div class="pc-original-label">原始描述</div>
+      <div class="pc-original">${escHtml(r.description)}</div>
+    </div>
+  `).join('');
+}
+
+function removePending(i) {
+  pendingRecords.splice(i, 1);
+  if (pendingRecords.length === 0) { cancelPreview(); return; }
+  renderPreviewCards();
+}
+
+async function confirmSaveAll() {
+  if (!pendingRecords.length) return;
+  // 从可编辑区域读取用户修改后的归纳内容
+  for (let i = 0; i < pendingRecords.length; i++) {
+    const el = document.getElementById(`psummary-${i}`);
+    if (el) {
+      const edited = el.textContent.trim();
+      if (edited) pendingRecords[i].summary = edited;
+    }
+  }
+  const btn = document.getElementById('confirmBtn');
+  btn.innerHTML = '<span class="spinner"></span> 保存中...'; btn.disabled = true;
+  try {
+    const r = await fetch(`${API}/api/records/batch`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ records: pendingRecords })
+    });
+    const d = await r.json();
+    if (d.success) {
+      showToast(d.message, 'success');
+      cancelPreview();
+      document.getElementById('recordInput').value = '';
+      await loadAllRecords();
+      renderSidebar();
+      await loadStats();
+      renderTodayRecords();
+    } else { showToast(d.error || '保存失败', 'error'); }
+  } catch(e) { showToast('保存失败', 'error'); }
+  finally { btn.innerHTML = '✅ 全部保存'; btn.disabled = false; }
+}
+
+async function quickRecord() {
+  const text = document.getElementById('recordInput').value.trim();
+  if (!text) { showToast('请先输入描述内容', 'error'); return; }
+  const btn = document.getElementById('quickBtn');
+  btn.innerHTML = '<span class="spinner"></span>'; btn.disabled = true;
+  try {
+    const r = await fetch(`${API}/api/records/batch`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ text })
+    });
+    const d = await r.json();
+    if (d.success) {
+      showToast(d.message, 'success');
+      document.getElementById('recordInput').value = '';
+      await loadAllRecords();
+      renderSidebar();
+      await loadStats();
+      renderTodayRecords();
+    } else { showToast(d.error || '保存失败', 'error'); }
+  } catch(e) { showToast('保存失败', 'error'); }
+  finally { btn.innerHTML = '⚡ 解析并直接保存'; btn.disabled = false; }
+}
+
+function cancelPreview() {
+  document.getElementById('previewSection').classList.remove('show');
+  pendingRecords = [];
+}
+
+function clearInput() { document.getElementById('recordInput').value = ''; cancelPreview(); }
+
+async function renderTodayRecords() {
+  const today = new Date().toISOString().slice(0,10);
+  const recs = allRecords.filter(r => r.date === today);
+  const el = document.getElementById('recordViewList');
+  if (!recs.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">☀️</div><div class="empty-title">今天还没有记录</div><div>用上方输入框开始记录吧！</div></div>';
+    return;
+  }
+  el.innerHTML = recs.map(r => renderRecordCard(r)).join('');
+}
+
+// ===== Browse =====
+async function renderBrowse() {
+  const records = await loadRecords(currentStudent, currentFilter);
+  document.getElementById('recordsCount').textContent = `共 ${records.length} 条${currentStudent ? ` · ${currentStudent}` : ''}`;
+  const el = document.getElementById('browseList');
+  if (!records.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">暂无记录</div><div>点击左侧学生筛选，或去记录事件添加</div></div>';
+    return;
+  }
+  el.innerHTML = records.map(r => renderRecordCard(r)).join('');
+}
+
+function renderRecordCard(r) {
+  return `<div class="record-card" id="card-${r.id}">
+    <div class="record-meta">
+      <span class="record-student">${r.student}</span>
+      <span class="dim-tag dim-${r.dimension}" id="dimtag-${r.id}">${r.dimension}</span>
+      <span class="record-date">${r.date}</span>
+    </div>
+    <div id="summary-display-${r.id}">
+      <div class="record-summary">${escHtml(r.summary || r.description)}</div>
+      ${r.summary && r.description !== r.summary ? `<div class="record-desc">${escHtml(r.description)}</div>` : ''}
+    </div>
+    <div id="summary-edit-${r.id}" style="display:none;">
+      <div style="font-size:11px;color:var(--text-sub);font-weight:600;margin-bottom:4px;">归纳总结</div>
+      <textarea class="edit-area" id="edit-summary-${r.id}">${escHtml(r.summary || '')}</textarea>
+      <div style="font-size:11px;color:var(--text-sub);font-weight:600;margin-bottom:4px;margin-top:8px;">原始描述</div>
+      <textarea class="edit-area" id="edit-desc-${r.id}" style="min-height:40px;font-size:12px;">${escHtml(r.description || '')}</textarea>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
+        <span style="font-size:11px;color:var(--text-sub);">维度：</span>
+        <select class="dim-edit-select" id="edit-dim-${r.id}">
+          <option value="学术发展" ${r.dimension==='学术发展'?'selected':''}>📚 学术发展</option>
+          <option value="个人成长" ${r.dimension==='个人成长'?'selected':''}>🌱 个人成长</option>
+          <option value="社会性发展" ${r.dimension==='社会性发展'?'selected':''}>🤝 社会性发展</option>
+          <option value="特色与潜能" ${r.dimension==='特色与潜能'?'selected':''}>✨ 特色与潜能</option>
+        </select>
+        <div style="flex:1"></div>
+        <button class="action-btn action-edit" onclick="saveEditRecord(${r.id})" style="padding:6px 14px;">💾 保存</button>
+        <button class="action-btn" style="background:#f5f5f5;color:#666;padding:6px 14px;" onclick="cancelEditRecord(${r.id})">取消</button>
+      </div>
+    </div>
+    <div class="record-actions">
+      <button class="action-btn action-edit" onclick="startEditRecord(${r.id})">✏️ 编辑</button>
+      <button class="action-btn action-del" onclick="deleteRecord(${r.id})">🗑 删除</button>
+    </div>
+  </div>`;
+}
+
+function startEditRecord(id) {
+  document.getElementById(`summary-display-${id}`).style.display = 'none';
+  document.getElementById(`summary-edit-${id}`).style.display = 'block';
+  document.getElementById(`edit-summary-${id}`).focus();
+}
+
+function cancelEditRecord(id) {
+  document.getElementById(`summary-display-${id}`).style.display = '';
+  document.getElementById(`summary-edit-${id}`).style.display = 'none';
+}
+
+async function saveEditRecord(id) {
+  const summary = document.getElementById(`edit-summary-${id}`).value.trim();
+  const desc = document.getElementById(`edit-desc-${id}`).value.trim();
+  const dim = document.getElementById(`edit-dim-${id}`).value;
+  if (!summary) { showToast('归纳总结不能为空', 'error'); return; }
+  try {
+    const r = await fetch(`${API}/api/records/${id}`, {
+      method: 'PUT', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ summary, description: desc, dimension: dim })
+    });
+    const d = await r.json();
+    if (d.success) {
+      showToast('修改已保存', 'success');
+      // 更新本地数据
+      const idx = allRecords.findIndex(r => r.id === id);
+      if (idx >= 0) {
+        allRecords[idx] = { ...allRecords[idx], summary, description: desc, dimension: dim, updated_at: d.record.updated_at };
+      }
+      // 刷新卡片
+      cancelEditRecord(id);
+      const card = document.getElementById(`card-${id}`);
+      if (card) {
+        const dimTag = card.querySelector('.dim-tag');
+        if (dimTag) { dimTag.className = `dim-tag dim-${dim}`; dimTag.textContent = dim; }
+        const summaryEl = card.querySelector('.record-summary');
+        if (summaryEl) summaryEl.textContent = summary;
+        const descEl = card.querySelector('.record-desc');
+        if (desc && summary !== desc) {
+          if (descEl) { descEl.textContent = desc; }
+          else {
+            const sDisplay = document.getElementById(`summary-display-${id}`);
+            const newDesc = document.createElement('div');
+            newDesc.className = 'record-desc';
+            newDesc.textContent = desc;
+            sDisplay.appendChild(newDesc);
+          }
+        } else if (descEl && (summary === desc || !desc)) {
+          descEl.remove();
+        }
+      }
+      renderSidebar();
+    } else { showToast(d.error || '修改失败', 'error'); }
+  } catch(e) { showToast('修改失败', 'error'); }
+}
+
+async function deleteRecord(id) {
+  if (!confirm('确认删除这条记录？')) return;
+  try {
+    const r = await fetch(`${API}/api/records/${id}`, {method:'DELETE'});
+    const d = await r.json();
+    if (d.success) {
+      document.getElementById(`card-${id}`)?.remove();
+      allRecords = allRecords.filter(r => r.id !== id);
+      showToast('记录已删除', 'info');
+      await loadStats(); renderSidebar();
+    }
+  } catch(e) { showToast('删除失败', 'error'); }
+}
+
+function filterByDim(dim, btn) {
+  currentFilter = dim;
+  document.querySelectorAll('#dimFilters .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderBrowse();
+}
+
+// ===== Report =====
+function renderReportGrid() {
+  const counts = {};
+  allRecords.forEach(r => { counts[r.student] = (counts[r.student]||0)+1; });
+  document.getElementById('reportStudentGrid').innerHTML = allStudents.map(s =>
+    `<button class="student-btn ${counts[s.name]?'has-records':''}" onclick="generateReport('${s.name}')" id="rbtn-${s.name}">
+      ${s.name}${counts[s.name]?`<br><small style="color:var(--primary)">${counts[s.name]}条</small>`:''}
+    </button>`
+  ).join('');
+}
+
+async function generateReport(name) {
+  document.querySelectorAll('.student-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById(`rbtn-${name}`)?.classList.add('selected');
+  try {
+    const r = await fetch(`${API}/api/report?student=${encodeURIComponent(name)}`);
+    const d = await r.json();
+    if (d.error) { showToast(d.error, 'info'); document.getElementById('reportCard').classList.remove('show'); return; }
+    renderReportCard(d.report);
+  } catch(e) { showToast('生成报告失败', 'error'); }
+}
+
+function renderReportCard(report) {
+  const dims = ["学术发展","个人成长","社会性发展","特色与潜能"];
+  const de = {"学术发展":"📚","个人成长":"🌱","社会性发展":"🤝","特色与潜能":"✨"};
+  const card = document.getElementById('reportCard');
+  card.innerHTML = `
+    <div class="report-header">
+      <div class="report-name">【${report.student} 同学成长简报】</div>
+      <div class="report-subtitle">生成时间：${report.generated_at}</div>
+      <div class="report-total">共 ${report.total} 条成长记录</div>
+    </div>
+    ${dims.map(dim => {
+      const data = report.dimensions[dim];
+      return `<div class="report-section">
+        <div class="report-section-header rs-${dim}">
+          ${de[dim]} ${dim}
+          <span style="margin-left:auto;font-size:12px;opacity:0.7">共 ${data.count} 条</span>
+        </div>
+        <div class="report-records">
+          ${data.records.length ? data.records.map(r => `
+            <div class="report-record-item">
+              <div class="rec-date">${r.date}</div>
+              ${r.summary ? `<div class="rec-summary">${escHtml(r.summary)}</div>` : ''}
+              <div class="rec-desc">${escHtml(r.description)}</div>
+            </div>
+          `).join('') : '<div class="no-record-dim">暂无该维度记录</div>'}
+        </div>
+      </div>`;
+    }).join('')}
+    <div class="report-summary">
+      <h4>💡 综合观察与建议</h4>
+      <p>${report.summary}</p>
+    </div>`;
+  card.classList.add('show');
+  card.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+// ===== Query =====
+function fillQuery(text) { document.getElementById('queryInput').value = text; }
+
+async function doQuery() {
+  const text = document.getElementById('queryInput').value.trim();
+  if (!text) { showToast('请输入查询内容', 'error'); return; }
+  const resultEl = document.getElementById('queryResult');
+  resultEl.style.display = 'block';
+  resultEl.innerHTML = '<div style="padding:30px;text-align:center;color:#718096"><span class="spinner" style="border-color:rgba(79,127,255,0.3);border-top-color:var(--primary)"></span><div style="margin-top:12px;font-size:13px;">正在分析...</div></div>';
+  try {
+    const r = await fetch(`${API}/api/query`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({text})
+    });
+    const d = await r.json();
+    if (d.type === 'report') {
+      const report = d.report;
+      const dims = ["学术发展","个人成长","社会性发展","特色与潜能"];
+      const de = {"学术发展":"📚","个人成长":"🌱","社会性发展":"🤝","特色与潜能":"✨"};
+      resultEl.innerHTML = `<div style="padding:24px;">
+        <div style="font-size:18px;font-weight:800;color:var(--primary);text-align:center;padding-bottom:16px;border-bottom:2px dashed var(--border);margin-bottom:16px;">
+          【${report.student} 同学成长简报】
+          <div style="font-size:12px;color:var(--text-sub);font-weight:400;margin-top:6px;">共 ${report.total} 条记录 · ${report.generated_at}</div>
+        </div>
+        ${dims.map(dim => {
+          const data = report.dimensions[dim];
+          return `<div style="margin-bottom:16px;">
+            <div class="report-section-header rs-${dim}" style="padding:10px 14px;border-radius:10px;font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+              ${de[dim]} ${dim}<span style="margin-left:auto;font-size:12px;opacity:0.7">共${data.count}条</span>
+            </div>
+            ${data.records.length ? data.records.map(rec => `
+              <div style="padding:8px 14px;border-left:3px solid var(--border);margin-bottom:8px;font-size:13px;line-height:1.6;">
+                <div style="color:var(--text-sub);font-size:11px;">${rec.date}</div>
+                ${rec.summary ? `<div style="font-weight:600;color:var(--primary);margin:4px 0;">${escHtml(rec.summary)}</div>` : ''}
+                <div style="color:var(--text-sub);font-size:12px;">${escHtml(rec.description)}</div>
+              </div>`).join('') : '<div style="color:var(--text-sub);font-size:12px;padding:8px 14px;">暂无记录</div>'}
+          </div>`;
+        }).join('')}
+        <div style="background:linear-gradient(135deg,#f0f4ff,#e8f0fe);border-radius:12px;padding:16px 20px;border:1px solid #c7d9ff;margin-top:8px;">
+          <div style="color:var(--primary);font-weight:700;margin-bottom:8px;font-size:14px;">💡 综合观察与建议</div>
+          <div style="font-size:13px;line-height:1.8;">${report.summary}</div>
+        </div>
+      </div>`;
+    } else if (d.type === 'no_data') {
+      resultEl.innerHTML = `<div style="padding:40px;text-align:center;">
+        <div style="font-size:40px;margin-bottom:12px;">📭</div>
+        <div style="font-size:15px;font-weight:600;margin-bottom:8px;">暂无 ${d.student} 的记录</div>
+        <div style="font-size:13px;color:var(--text-sub)">请先在"记录事件"中添加</div></div>`;
+    } else {
+      resultEl.innerHTML = `<div style="padding:24px;font-size:14px;line-height:1.8;">
+        <div style="font-weight:700;margin-bottom:12px;">📊 查询结果</div><p>${d.message}</p>
+        ${d.students_with_records?.length ? `<div style="margin-top:14px;font-size:13px;color:var(--text-sub)">已有记录的学生：</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
+            ${d.students_with_records.map(n => `<span style="background:#eef3ff;color:var(--primary);padding:4px 12px;border-radius:20px;font-size:12px;cursor:pointer" onclick="fillQuery('分析一下${n}')">${n}</span>`).join('')}
+          </div>` : ''}</div>`;
+    }
+  } catch(e) { resultEl.innerHTML = '<div style="padding:30px;text-align:center;color:#ef4444">查询失败</div>'; }
+}
+
+function showToast(msg, type='info') {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`; t.textContent = msg; t.onclick = () => t.remove();
+  c.appendChild(t); setTimeout(() => t.remove(), 3500);
+}
+
+function escHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ===== Cloud Sync & Export =====
+async function tdocSync() {
+  const statusEl = document.getElementById('tdocStatus');
+  statusEl.textContent = '正在同步到腾讯文档...';
+  try {
+    const r = await fetch(`${API}/api/tdoc/sync`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}' });
+    const d = await r.json();
+    if (d.success) {
+      statusEl.innerHTML = `<span style="color:var(--success)">${d.message}</span>`;
+      showToast(d.message, 'success');
+    } else {
+      statusEl.innerHTML = `<span style="color:#ef4444">${d.error}</span>`;
+    }
+  } catch(e) { statusEl.innerHTML = '<span style="color:#ef4444">网络错误</span>'; }
+}
+
+async function tdocLoad() {
+  const statusEl = document.getElementById('tdocStatus');
+  statusEl.textContent = '正在从腾讯文档加载...';
+  try {
+    const r = await fetch(`${API}/api/tdoc/load`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}' });
+    const d = await r.json();
+    if (d.success) {
+      statusEl.innerHTML = `<span style="color:var(--success)">${d.message}</span>`;
+      showToast(d.message, 'success');
+      await loadAllRecords();
+      renderSidebar();
+      await loadStats();
+      renderDashboard();
+    } else {
+      statusEl.innerHTML = `<span style="color:#ef4444">${d.error}</span>`;
+    }
+  } catch(e) { statusEl.innerHTML = '<span style="color:#ef4444">网络错误</span>'; }
+}
+
+async function cloudSave() {
+  const statusEl = document.getElementById('cloudStatus');
+  statusEl.textContent = '正在上传...';
+  try {
+    const r = await fetch(`${API}/api/cloud/save`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}' });
+    const d = await r.json();
+    if (d.success) {
+      document.getElementById('blobIdInput').value = d.blob_id;
+      statusEl.innerHTML = `<span style="color:var(--success)">${d.message}</span><br><span style="font-size:11px;">请在其他设备输入ID <b>${d.blob_id}</b> 即可恢复数据</span>`;
+      showToast(d.message, 'success');
+    } else {
+      statusEl.innerHTML = `<span style="color:#ef4444">${d.error}</span>`;
+    }
+  } catch(e) { statusEl.innerHTML = '<span style="color:#ef4444">网络错误</span>'; }
+}
+
+async function cloudLoad() {
+  const blobId = document.getElementById('blobIdInput').value.trim();
+  const statusEl = document.getElementById('cloudStatus');
+  statusEl.textContent = '正在下载...';
+  try {
+    const r = await fetch(`${API}/api/cloud/load`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({blob_id: blobId}) });
+    const d = await r.json();
+    if (d.success) {
+      statusEl.innerHTML = `<span style="color:var(--success)">${d.message}</span>`;
+      showToast(d.message, 'success');
+      await loadAllRecords();
+      renderSidebar();
+      await loadStats();
+      renderDashboard();
+    } else {
+      statusEl.innerHTML = `<span style="color:#ef4444">${d.error}</span>`;
+    }
+  } catch(e) { statusEl.innerHTML = '<span style="color:#ef4444">网络错误</span>'; }
+}
+
+function copyBlobId() {
+  const input = document.getElementById('blobIdInput');
+  if (!input.value) { showToast('还没有云端ID，请先保存', 'info'); return; }
+  navigator.clipboard.writeText(input.value).then(() => showToast('已复制云端ID', 'success'));
+}
+
+function exportExcel() { window.open(`${API}/api/export/excel`, '_blank'); }
+function exportJSON() { window.open(`${API}/api/export/json`, '_blank'); }
+
+async function importJSON(input) {
+  const file = input.files[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    const r = await fetch(`${API}/api/import`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({data}) });
+    const d = await r.json();
+    if (d.success) {
+      showToast(d.message, 'success');
+      await loadAllRecords();
+      renderSidebar();
+      await loadStats();
+    } else { showToast(d.error, 'error'); }
+  } catch(e) { showToast('文件格式错误', 'error'); }
+  input.value = '';
+}
+
+init();
+</script>
+</body>
+</html>

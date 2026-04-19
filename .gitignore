@@ -1,0 +1,5 @@
+.blob_id
+__pycache__/
+*.pyc
+.DS_Store
+.vercel
