@@ -29,11 +29,35 @@ TDOC_FILE_ID = "KZYeTgkjnrpT"
 TDOC_SHEET_ID = "t00i2h"
 TDOC_URL = "https://docs.qq.com/smartsheet/DS1pZZVRna2pucnBU"
 
+# Cloudflare Worker 代理地址（PA免费版白名单含workers.dev）
+# 部署 tdoc-proxy-worker.js 后填入分配的地址
+TDOC_PROXY = os.environ.get("TDOC_PROXY", "")  # 例如 "https://tdoc-proxy.xxx.workers.dev"
+
 # SSL上下文（用于腾讯文档API调用）
 _ssl_ctx = ssl.create_default_context()
 
+def _parse_tdoc_result(result):
+    """解析腾讯文档API返回结果（统一处理JSON-RPC双层结构）"""
+    # 检查JSON-RPC层级的错误
+    if "error" in result:
+        err = result["error"]
+        if isinstance(err, dict):
+            return {"error": err.get("message", str(err))}
+        else:
+            return {"error": str(err)}
+    if "result" in result:
+        content = result["result"].get("content", [])
+        for c in content:
+            if c.get("type") == "text":
+                try:
+                    parsed = json.loads(c["text"])
+                    return parsed
+                except:
+                    return {"text": c["text"]}
+    return result
+
 def tdoc_call(tool_name, args_dict):
-    """调用腾讯文档MCP API"""
+    """调用腾讯文档MCP API — 优先通过Cloudflare Worker代理"""
     payload = {
         "jsonrpc": "2.0",
         "method": "tools/call",
@@ -41,31 +65,38 @@ def tdoc_call(tool_name, args_dict):
         "id": 1
     }
     data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
-    req = urllib.request.Request(
-        TDOC_API, data=data,
-        headers={"Authorization": TDOC_TOKEN, "Content-Type": "application/json"},
-        method="POST"
-    )
+
+    # 策略1：通过 Cloudflare Worker 代理（PA白名单含workers.dev）
+    if TDOC_PROXY:
+        try:
+            proxy_data = json.dumps({
+                "tool_name": tool_name,
+                "args": args_dict
+            }, ensure_ascii=False).encode("utf-8")
+            proxy_req = urllib.request.Request(
+                TDOC_PROXY, data=proxy_data,
+                headers={
+                    "X-TDoc-Token": TDOC_TOKEN,
+                    "Content-Type": "application/json"
+                },
+                method="POST"
+            )
+            proxy_resp = urllib.request.urlopen(proxy_req, timeout=30, context=_ssl_ctx)
+            proxy_result = json.loads(proxy_resp.read().decode("utf-8"))
+            return _parse_tdoc_result(proxy_result)
+        except Exception as e:
+            print(f"[tdoc] Proxy failed: {e}, trying direct...")
+
+    # 策略2：直接调用（本地版可用，PA可能被白名单阻断）
     try:
+        req = urllib.request.Request(
+            TDOC_API, data=data,
+            headers={"Authorization": TDOC_TOKEN, "Content-Type": "application/json"},
+            method="POST"
+        )
         resp = urllib.request.urlopen(req, timeout=30, context=_ssl_ctx)
         result = json.loads(resp.read().decode("utf-8"))
-        # 检查JSON-RPC层级的错误
-        if "error" in result:
-            err = result["error"]
-            if isinstance(err, dict):
-                return {"error": err.get("message", str(err))}
-            else:
-                return {"error": str(err)}
-        if "result" in result:
-            content = result["result"].get("content", [])
-            for c in content:
-                if c.get("type") == "text":
-                    try:
-                        parsed = json.loads(c["text"])
-                        return parsed
-                    except:
-                        return {"text": c["text"]}
-        return result
+        return _parse_tdoc_result(result)
     except Exception as e:
         return {"error": str(e)}
 
