@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: class-growth-manager
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python render_app.py
+    envVars:
+      - key: BLOB_ID
+        value: 019da57f-5bda-7827-88e3-a7a87939b113
+      - key: PYTHON_VERSION
+        value: 3.11.0
