@@ -10,6 +10,8 @@ import json
 import os
 import re
 import time
+import urllib.request
+import ssl
 from datetime import datetime, timedelta
 
 app = Flask(__name__, static_folder='public')
@@ -19,6 +21,98 @@ DATA_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data.json'
 
 # 四大维度
 DIMENSIONS = ["学术发展", "个人成长", "社会性发展", "特色与潜能"]
+
+# ===== 腾讯文档智能表格配置 =====
+TDOC_TOKEN = "68f6acecb5ce46bf8d22062b77a1cc78"
+TDOC_API = "https://docs.qq.com/openapi/mcp"
+TDOC_FILE_ID = "KZYeTgkjnrpT"
+TDOC_SHEET_ID = "t00i2h"
+TDOC_URL = "https://docs.qq.com/smartsheet/DS1pZZVRna2pucnBU"
+
+# SSL上下文（用于腾讯文档API调用）
+_ssl_ctx = ssl.create_default_context()
+
+def tdoc_call(tool_name, args_dict):
+    """调用腾讯文档MCP API"""
+    payload = {
+        "jsonrpc": "2.0",
+        "method": "tools/call",
+        "params": {"name": tool_name, "arguments": args_dict},
+        "id": 1
+    }
+    data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    req = urllib.request.Request(
+        TDOC_API, data=data,
+        headers={"Authorization": TDOC_TOKEN, "Content-Type": "application/json"},
+        method="POST"
+    )
+    try:
+        resp = urllib.request.urlopen(req, timeout=30, context=_ssl_ctx)
+        result = json.loads(resp.read().decode("utf-8"))
+        if "result" in result:
+            content = result["result"].get("content", [])
+            for c in content:
+                if c.get("type") == "text":
+                    try:
+                        return json.loads(c["text"])
+                    except:
+                        return {"text": c["text"]}
+        if "error" in result:
+            return result
+        return result
+    except Exception as e:
+        return {"error": str(e)}
+
+def _text_val(s):
+    """格式化文本字段值"""
+    return [{"text": str(s), "type": "text"}]
+
+def _option_val(s):
+    """格式化单选字段值"""
+    return [{"text": str(s)}]
+
+def _date_val(date_str):
+    """将日期字符串转为毫秒时间戳字符串（腾讯文档日期字段要求）"""
+    try:
+        dt = datetime.strptime(date_str, "%Y-%m-%d")
+        ts = int(dt.timestamp() * 1000)
+        return str(ts)
+    except:
+        return ""
+
+def tdoc_add_records(records):
+    """同步记录到腾讯文档智能表格（严格按字段类型格式化）"""
+    formatted = []
+    for r in records:
+        formatted.append({
+            "field_values": {
+                "学生姓名": _text_val(r["student"]),
+                "date": _date_val(r["date"]),
+                "记录维度": _option_val(r["dimension"]),
+                "归纳描述": _text_val(r.get("summary", "")),
+                "原始描述": _text_val(r.get("description", "")),
+                "记录人": _text_val(r.get("recorder", "梁老师"))
+            }
+        })
+    # 逐条添加（比批量更可靠，避免单条失败导致整批丢失）
+    results = []
+    for record in formatted:
+        r = tdoc_call("smartsheet.add_records", {
+            "file_id": TDOC_FILE_ID,
+            "sheet_id": TDOC_SHEET_ID,
+            "records": [record]
+        })
+        results.append(r)
+    return results
+
+def tdoc_list_records():
+    """从腾讯文档获取所有记录"""
+    return tdoc_call("smartsheet.list_records", {
+        "file_id": TDOC_FILE_ID,
+        "sheet_id": TDOC_SHEET_ID,
+        "offset": 0,
+        "limit": 1000
+    })
 
 # ===== 语义解析引擎（从本地版server.py完整移植） =====
 # 基于评分的多维度分类，比简单关键词匹配精确得多
@@ -831,10 +925,19 @@ def batch_records():
     data['records'].extend(records_to_save)
     save_data(data)
 
+    # 自动同步到腾讯文档
+    tdoc_msg = ""
+    try:
+        tdoc_results = tdoc_add_records(records_to_save)
+        synced = sum(1 for r in tdoc_results if not r.get("error"))
+        tdoc_msg = f"，已同步 {synced} 条到腾讯文档"
+    except Exception as e:
+        tdoc_msg = f"，腾讯文档同步失败: {str(e)[:50]}"
+
     count = len(records_to_save)
     return jsonify({
         "success": True,
-        "message": f"已保存 {count} 条记录",
+        "message": f"已保存 {count} 条记录{tdoc_msg}",
         "count": count
     })
 
@@ -1089,15 +1192,114 @@ def health_check():
     })
 
 
-# 以下API在PythonAnywhere免费版无法使用
+# ===== 腾讯文档同步 API =====
 @app.route('/api/tdoc/sync', methods=['POST'])
 def tdoc_sync():
-    return jsonify({"success": False, "error": "PythonAnywhere免费版暂不支持腾讯文档同步"})
+    """手动同步所有本地数据到腾讯文档"""
+    data = get_data()
+    records = data.get('records', [])
+    if not records:
+        return jsonify({"success": False, "error": "没有记录可同步"})
+    try:
+        results = tdoc_add_records(records)
+        synced = sum(1 for r in results if not r.get("error"))
+        failed = len(results) - synced
+        msg = f"✅ 已同步 {synced} 条记录到腾讯文档"
+        if failed > 0:
+            msg += f"（{failed} 条失败）"
+        return jsonify({
+            "success": True,
+            "total": len(records),
+            "synced": synced,
+            "failed": failed,
+            "message": msg,
+            "url": TDOC_URL
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": f"同步失败: {str(e)}"})
 
 
 @app.route('/api/tdoc/load', methods=['POST'])
 def tdoc_load():
-    return jsonify({"success": False, "error": "PythonAnywhere免费版暂不支持腾讯文档加载"})
+    """从腾讯文档加载记录到本地"""
+    try:
+        cloud_data = tdoc_list_records()
+        if cloud_data.get("error"):
+            return jsonify({"success": False, "error": f"加载失败: {cloud_data['error']}"})
+
+        cloud_records = cloud_data.get("records", [])
+        if not cloud_records:
+            return jsonify({"success": False, "error": "腾讯文档中暂无记录"})
+
+        data = get_data()
+        if 'records' not in data:
+            data['records'] = []
+
+        # 从腾讯文档记录提取学生姓名等字段
+        existing_ids = set(r.get('id', '') for r in data['records'])
+        added = 0
+        for cr in cloud_records:
+            fv = cr.get("field_values", {})
+            record = {
+                "id": cr.get("record_id", str(int(time.time() * 1000) + added)),
+                "student": _extract_text(fv.get("学生姓名", [])),
+                "date": _extract_date(fv.get("date", "")),
+                "dimension": _extract_option(fv.get("记录维度", [])),
+                "summary": _extract_text(fv.get("归纳描述", [])),
+                "description": _extract_text(fv.get("原始描述", [])),
+                "recorder": _extract_text(fv.get("记录人", [])) or "梁老师",
+                "created_at": datetime.now().isoformat()
+            }
+            if record["student"] and record["id"] not in existing_ids:
+                data["records"].append(record)
+                existing_ids.add(record["id"])
+                added += 1
+
+        save_data(data)
+        return jsonify({
+            "success": True,
+            "added": added,
+            "total": len(data["records"]),
+            "message": f"✅ 从腾讯文档加载 {added} 条新记录，共 {len(data['records'])} 条"
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": f"加载失败: {str(e)}"})
+
+
+def _extract_text(field_val):
+    """从腾讯文档字段值中提取文本"""
+    if isinstance(field_val, list):
+        texts = [item.get("text", "") for item in field_val if isinstance(item, dict)]
+        return "".join(texts).strip()
+    return str(field_val).strip() if field_val else ""
+
+
+def _extract_option(field_val):
+    """从腾讯文档单选字段中提取选项文本"""
+    if isinstance(field_val, list):
+        for item in field_val:
+            if isinstance(item, dict) and item.get("text"):
+                return item["text"]
+    return ""
+
+
+def _extract_date(field_val):
+    """从腾讯文档日期字段中提取日期字符串"""
+    if isinstance(field_val, (int, float)):
+        # 毫秒时间戳转日期
+        try:
+            dt = datetime.fromtimestamp(field_val / 1000)
+            return dt.strftime("%Y-%m-%d")
+        except:
+            return ""
+    if isinstance(field_val, str) and field_val:
+        try:
+            ts = int(field_val)
+            dt = datetime.fromtimestamp(ts / 1000)
+            return dt.strftime("%Y-%m-%d")
+        except:
+            return field_val
+    return ""
 
 
 @app.route('/api/cloud/save', methods=['POST'])
