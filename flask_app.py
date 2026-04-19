@@ -49,16 +49,22 @@ def tdoc_call(tool_name, args_dict):
     try:
         resp = urllib.request.urlopen(req, timeout=30, context=_ssl_ctx)
         result = json.loads(resp.read().decode("utf-8"))
+        # 检查JSON-RPC层级的错误
+        if "error" in result:
+            err = result["error"]
+            if isinstance(err, dict):
+                return {"error": err.get("message", str(err))}
+            else:
+                return {"error": str(err)}
         if "result" in result:
             content = result["result"].get("content", [])
             for c in content:
                 if c.get("type") == "text":
                     try:
-                        return json.loads(c["text"])
+                        parsed = json.loads(c["text"])
+                        return parsed
                     except:
                         return {"text": c["text"]}
-        if "error" in result:
-            return result
         return result
     except Exception as e:
         return {"error": str(e)}
@@ -111,7 +117,7 @@ def tdoc_list_records():
         "file_id": TDOC_FILE_ID,
         "sheet_id": TDOC_SHEET_ID,
         "offset": 0,
-        "limit": 1000
+        "limit": 100
     })
 
 # ===== 语义解析引擎（从本地版server.py完整移植） =====
